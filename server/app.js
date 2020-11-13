@@ -1,29 +1,53 @@
 const express = require('express')
 const app = express()
-const cors = require('cors')
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
 const port = process.env.PORT || 3000
+const routes = require('./routes')
+const cors = require('cors')
+const errHandler = require('./middlewares/errorHandler')
 
+var http = require('http').createServer(app);
+var io = require('socket.io')(http);
 
+//CORS
 app.use(cors())
-app.use(express.urlencoded({extended:true}))
+
+//BODY PARSER
+app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 
-let users = []
+
+//ROUTER
+app.use(routes)
+
+app.use(errHandler)
+
+const data = 'eh masuk nih'
 
 io.on('connection', (socket) => {
-  socket.on('add-user',(data)=>{
-    users.push(data)
-    io.emit('USER_CONNECTED',users)
-  })
-  socket.on('update-data',(data)=>{
-    console.log(data);
-    let inputs = data
-    socket.emit('dataGame',inputs)
-  })
+    console.log('a user connected');
+    socket.emit("init", data)
+
+    socket.on('updateLeaderboards', (payload) => {
+        console.log(payload, "<<dari server nihh");
+        socket.broadcast.emit('sendLeaderboardsToOther', payload);
+    })
+
+    socket.on('loseMessage', (payload) => {
+        console.log(payload, "<<dari server nihh");
+        socket.broadcast.emit('sendLoseToOther', payload);
+    })
+
+    socket.on('newMessage', (payload) => {
+        console.log(payload, "<<dari server nihh");
+        socket.broadcast.emit('sendMessageToOther', payload);
+    })
+
+    
 });
 
+  
 http.listen(port, () => {
-  console.log(`listening on *:${port}`);
+    console.log(`listening on *:${port}`); 
 });
+
+
